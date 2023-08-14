@@ -1,0 +1,22 @@
+class asd {
+        init(asd) {
+                if (asd == "swag") {
+                        this.asd = "trick";
+                } else {
+                        this.asd = "bruh";
+                }
+        }
+
+        print_asd() {
+                print this.asd;
+        }
+}
+
+
+var swag = asd("swag");
+
+for (var a = 0; a < 100000000; a = a + 1) {
+        var click = asd("asldfmkasdklasdalksdasdklasdlasdlaksdaklsdalksdalksdaklsdalsdkalskdaskldasldkaslkdasldasldkasdlasdklasdlasdlasdklasdlasdlaksdlasdlaksdalsdalksdaklsdd");
+}
+
+swag.print_asd();
