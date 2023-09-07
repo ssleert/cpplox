@@ -10,6 +10,8 @@ namespace ast {
         class Grouping;
         class Literal;
         class Unary;
+        class Variable;
+        class Assign;
 
         template<class R>
         class Visitor {
@@ -20,6 +22,8 @@ namespace ast {
                 virtual fn visitGroupingExpr(Grouping& expr) -> R = 0;
                 virtual fn visitLiteralExpr(Literal& expr) -> R = 0;
                 virtual fn visitUnaryExpr(Unary& expr) -> R = 0;
+                virtual fn visitVariableExpr(Variable& expr) -> R = 0;
+                virtual fn visitAssignExpr(Assign& expr) -> R = 0;
         };
 
         class Expr {
@@ -90,6 +94,36 @@ namespace ast {
                         std::shared_ptr<Expr> r
                 ) : op(o),
                         right(r)
+                {}
+        };
+
+        class Variable : public Expr {
+        public:
+                token::Token name;
+
+                fn accept(Visitor<std::any>& visitor) -> std::any {
+                        return visitor.visitVariableExpr(*this);
+                }
+
+                Variable(
+                        token::Token t
+                ) : name(t)
+                {}
+        };
+
+        class Assign : public Expr {
+        public:
+                token::Token name;
+                std::shared_ptr<Expr> value;
+
+                fn accept(Visitor<std::any>& visitor) -> std::any {
+                        return visitor.visitAssignExpr(*this);
+                }
+
+                Assign(
+                        token::Token t,
+                        std::shared_ptr<Expr> v
+                ) : name(t), value(v)
                 {}
         };
 }

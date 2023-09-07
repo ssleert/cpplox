@@ -15,27 +15,17 @@ class Lox {
 
                 // parse ast from tokens
                 parser::Parser pr(tokens);
-                auto expr = pr.parse();
+                auto statements = pr.parse();
+                std::wcout << "parsing" << std::endl;
                 // stop on syntax error
                 if (errors::hadError) {
                         return;
                 }
 
-                // print tokens
-                std::wcout << "-----tokens-----" << std::endl;
-                for (auto& t : tokens) {
-                        std::wcout << std::to_wstring(t) << L"\n" << std::endl;
-                }
-
-                // print ast
-                std::wcout << "-----ast-----" << std::endl;
-                ast_printer::AstPrinter ap;
-                std::wcout << ap.print(expr) << std::endl;
-
                 // interpret
                 std::wcout << "\n-----result-----" << std::endl;
                 interpreter::Interpreter it;
-                it.interpret(expr);
+                it.interpret(statements);
         }
 
         fn run_file(std::wstring& path) -> int {

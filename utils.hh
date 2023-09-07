@@ -22,7 +22,7 @@ namespace utils {
                 return L"empty";
         }
 
-        fn to_string(std::wstring& wstr) -> std::string {
+        fn to_string(std::wstring wstr) -> std::string {
                 return u8str_conv.to_bytes(wstr);
         }
 
@@ -30,7 +30,7 @@ namespace utils {
                 return u8str_conv.from_bytes(str);
         }
 
-        fn to_wstring(std::string& str) -> std::wstring {
+        fn to_wstring(std::string str) -> std::wstring {
                 return u8str_conv.from_bytes(str.c_str());
         }
 
@@ -68,7 +68,8 @@ namespace utils {
 
         fn panic(std::wstring msg) {
                 std::wcout << msg << std::endl;
-                std::abort();
+                //std::abort();
+                std::exit(1);
         }
 
         template<typename ... Ts>

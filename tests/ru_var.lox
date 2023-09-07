@@ -1,0 +1,3 @@
+var свег = "swag" + " on me";
+
+print свег;

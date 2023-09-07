@@ -11,7 +11,7 @@ namespace scanner {
                 size_t line;
                 size_t comment_embeds;
 
-                const std::unordered_map<std::wstring, token::token_type> keywords = {
+                const std::unordered_map<std::wstring, token::token_type> keywords {
                         {L"and",    token::AND},
                         {L"class",  token::CLASS},
                         {L"else",   token::ELSE},
@@ -21,6 +21,7 @@ namespace scanner {
                         {L"if",     token::IF},
                         {L"nil",    token::NIL},
                         {L"or",     token::OR},
+                        {L"print",  token::PRINT},
                         {L"return", token::RETURN},
                         {L"super",  token::SUPER},
                         {L"this",   token::THIS},
@@ -148,7 +149,6 @@ namespace scanner {
                                 }
                                 ch = advance();
                         }
-
                 }
 
                 fn scan_token() {

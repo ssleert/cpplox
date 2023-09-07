@@ -61,7 +61,7 @@ namespace token {
 
 }
 
-namespace std { 
+namespace std {
         fn to_wstring(token::token_type& t) -> std::wstring {
                 return token::token_type_strs[t];
         }

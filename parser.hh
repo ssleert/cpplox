@@ -3,9 +3,15 @@
 #include "errors.hh"
 #include "token.hh"
 #include "ast.hh"
+#include "stmt.hh"
 
 namespace parser {
-        class parse_error : public std::exception {};
+        class parse_error : public std::runtime_error {
+        public:
+                parse_error(std::string msg)
+                        : std::runtime_error(msg)
+                {}
+        };
 
         using expr_ptr = std::shared_ptr<ast::Expr>;
 
@@ -79,7 +85,7 @@ namespace parser {
 
                 fn error(token::Token t, std::wstring msg) -> parse_error {
                         errors::error(t, msg);
-                        return parse_error();
+                        return parse_error("all bad man");
                 }
 
                 fn consume(token::token_type type, std::wstring msg) -> token::Token {
@@ -101,6 +107,9 @@ namespace parser {
 
                         if (match({token::NUMBER, token::STRING})) {
                                 return expr_ptr(new ast::Literal(previous().literal));
+                        }
+                        if (match({token::IDENTIFIER})) {
+                                return expr_ptr(new ast::Variable(previous()));
                         }
 
                         if (match({token::LEFT_PAREN})) {
@@ -169,18 +178,87 @@ namespace parser {
                         return expr;
                 }
 
+                fn assignment() -> std::shared_ptr<ast::Expr> {
+                        auto expr = equality();
+
+                        if (match({token::EQUAL})) {
+                                auto equals = previous();
+                                auto value = assignment();
+
+                                if (typeid(expr) == typeid(ast::Variable)) {
+                                        auto name = dynamic_cast<ast::Variable*>(expr.get())->name;
+                                        return std::shared_ptr<ast::Expr>(new ast::Assign(name, value));
+                                }
+
+                                errors::error(equals, L"Invalid assignment target");
+                        }
+
+                        return expr;
+                }
+
                 fn expression() -> std::shared_ptr<ast::Expr> {
-                        return equality();
+                        return assignment();
+                }
+
+                // -----------------STATEMENTS-------------------
+
+                fn expression_statement() -> std::shared_ptr<stmt::Stmt> {
+                        auto expr = expression();
+                        consume(token::SEMICOLON, L"Except ';' after value.");
+                        return std::shared_ptr<stmt::Stmt>(new stmt::Expression(expr));
+                }
+
+                fn print_statement() -> std::shared_ptr<stmt::Stmt> {
+                        auto value = expression();
+                        consume(token::SEMICOLON, L"Except ';' after value.");
+                        return std::shared_ptr<stmt::Stmt>(new stmt::Print(value));
+                }
+
+                fn statement() -> std::shared_ptr<stmt::Stmt> {
+                        if (match({token::PRINT})) {
+                                return print_statement();
+                        }
+
+                        return expression_statement();
+                }
+
+                fn var_declaration() -> std::shared_ptr<stmt::Stmt> {
+                        auto name = consume(token::IDENTIFIER, L"Expect var name.");
+
+                        std::shared_ptr<ast::Expr> initializer = nullptr;
+                        if (match({token::EQUAL})) {
+                                initializer = expression();
+                        }
+
+                        consume(token::SEMICOLON, L"Expect ';' variable declaration.");
+                        return std::shared_ptr<stmt::Stmt>(
+                                        new stmt::Var(name, initializer)
+                        );
+                }
+
+                fn declaration() -> std::shared_ptr<stmt::Stmt> {
+                        try {
+                                if (match({token::VAR})) {
+                                        return var_declaration();
+                                }
+
+                                return statement();
+                        } catch (parse_error& err) {
+                                synchronize();
+                                return {};
+                        }
                 }
 
         public:
 
-                fn parse() -> std::shared_ptr<ast::Expr> {
-                        try {
-                                return expression();
-                        } catch(parse_error& err)  {
-                                return nullptr;
+                fn parse() -> std::vector<std::shared_ptr<stmt::Stmt>> {
+                        std::vector<std::shared_ptr<stmt::Stmt>> statements;
+
+                        while (!is_at_end()) {
+                                statements.push_back(declaration());
                         }
+
+                        return statements;
                 }
 
                 Parser(

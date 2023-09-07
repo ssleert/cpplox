@@ -2,14 +2,22 @@
 #include "cpplox.hh"
 #include "token.hh"
 #include "ast.hh"
+#include "stmt.hh"
+#include "environment.hh"
 #include "errors.hh"
 
 namespace interpreter {
+        class Interpreter : public ast::Visitor<std::any>,
+                            public stmt::Visitor<std::any>
+        {
+                environment::Environment env;                
 
-
-        class Interpreter : public ast::Visitor<std::any> {
                 fn evaluate(std::shared_ptr<ast::Expr> expr) -> std::any {
                         return expr->accept(*this);
+                }
+
+                fn execute(std::shared_ptr<stmt::Stmt> statement) {
+                        statement->accept(*this);
                 }
 
                 fn is_truthy(std::any& obj) -> bool {
@@ -71,16 +79,23 @@ namespace interpreter {
                                         text = text.substr(0, text.length() - 7);
                                 }
                                 return text;
+                        } else if (obj.type() == typeid(std::wstring)) {
+                                return std::any_cast<std::wstring>(obj);
+                        } else if (obj.type() == typeid(bool)) {
+                                return std::any_cast<bool>(obj)
+                                        ? L"true"
+                                        : L"false";
                         }
 
-                        return L"object noup";
+                        return L"NO_STRING_FOR_OBJECT";
                 }
 
         public:
-                fn interpret(std::shared_ptr<ast::Expr> expr) {
+                fn interpret(std::vector<std::shared_ptr<stmt::Stmt>> statements) {
                         try {
-                                auto value = evaluate(expr);
-                                std::wcout << stringify(value) << std::endl;
+                                for (auto& statement : statements) {
+                                        execute(statement);
+                                }
                         } catch (errors::runtime_panic& err) {
                                 errors::runtime_err(err);
                         }
@@ -147,7 +162,7 @@ namespace interpreter {
                                 return std::any_cast<double>(left) / std::any_cast<double>(right);
                         case token::STAR:
                                 check_number_operands(expr.op, left, right);
-                                return std::any_cast<double>(left) * std::any_cast<double>(right);
+                                return std::any_cast<double>(left)  * std::any_cast<double>(right);
                         case token::BANG_EQUAL:
                                 return !is_equal(left, right);
                         case token::EQUAL_EQUAL:
@@ -158,6 +173,40 @@ namespace interpreter {
 
                         // unreachable
                         utils::panic(L"interpreter.hh: binary expr, unreachable code");
+                        return std::any();
+                }
+
+                fn visitVariableExpr(ast::Variable& expr) -> std::any {
+                        return env.get(expr.name);
+                }
+
+                fn visitAssignExpr(ast::Assign& expr) -> std::any {
+                        auto value = evaluate(expr.value);
+                        env.assign(expr.name, value);
+                        return value;
+                }
+
+                // ---------------STATEMENTS---------------
+
+                fn visitExpressionStmt(stmt::Expression& stmt) -> std::any {
+                        evaluate(stmt.expression);
+                        return std::any();
+                }
+
+                fn visitPrintStmt(stmt::Print& stmt) -> std::any {
+                        auto value = evaluate(stmt.expression);
+                        std::wcout << stringify(value) << std::endl;
+                        return std::any();
+                }
+
+                fn visitVarStmt(stmt::Var& stmt) -> std::any {
+                        auto value = std::any();
+
+                        if (stmt.initializer != nullptr) {
+                                value = evaluate(stmt.initializer);
+                        }
+
+                        env.define(stmt.name.lexeme, value);
                         return std::any();
                 }
         };
