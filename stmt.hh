@@ -7,6 +7,7 @@ namespace stmt {
         class Expression;
         class Print;
         class Var;
+        class Block;
 
         template<class R>
         class Visitor {
@@ -14,6 +15,7 @@ namespace stmt {
                 virtual fn visitExpressionStmt(Expression& stmt) -> R = 0;
                 virtual fn visitPrintStmt(Print& stmt) -> R = 0;
                 virtual fn visitVarStmt(Var& stmt) -> R = 0;
+                virtual fn visitBlockStmt(Block& stmt) -> R = 0;
         };
 
         class Stmt {
@@ -63,6 +65,20 @@ namespace stmt {
                         token::Token token,
                         std::shared_ptr<ast::Expr> expr
                 ) : name(token), initializer(expr)
+                {}
+        };
+
+        class Block : public Stmt {
+        public:
+                std::vector<std::shared_ptr<stmt::Stmt>> statements;
+
+                fn accept(Visitor<std::any>& visitor) -> std::any {
+                        return visitor.visitBlockStmt(*this);
+                }
+
+                Block(
+                        std::vector<std::shared_ptr<stmt::Stmt>> s
+                ) : statements(s)
                 {}
         };
 }

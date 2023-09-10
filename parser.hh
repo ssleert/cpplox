@@ -218,6 +218,12 @@ namespace parser {
                         if (match({token::PRINT})) {
                                 return print_statement();
                         }
+                        
+                        if (match({token::LEFT_BRACE})) {
+                                return std::shared_ptr<stmt::Stmt>(
+                                        new stmt::Block(block())
+                                );
+                        }
 
                         return expression_statement();
                 }
@@ -248,6 +254,17 @@ namespace parser {
                                 return {};
                         }
                 }
+
+                fn block() -> std::vector<std::shared_ptr<stmt::Stmt>> {
+                        std::vector<std::shared_ptr<stmt::Stmt>> statements;
+                        while (!check(token::RIGHT_BRACE) && !is_at_end()) {
+                                statements.push_back(declaration());
+                        }
+
+                        consume(token::RIGHT_BRACE, L"Expect '}' after block.");
+                        return statements;
+                }
+
 
         public:
 

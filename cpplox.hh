@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <cassert>
 #include <format>
 #include <string>
 #include <cstring>

@@ -10,7 +10,10 @@ namespace interpreter {
         class Interpreter : public ast::Visitor<std::any>,
                             public stmt::Visitor<std::any>
         {
-                environment::Environment env;                
+                std::shared_ptr<environment::Environment> env =
+                        std::shared_ptr<environment::Environment>(
+                                new environment::Environment()
+                        );
 
                 fn evaluate(std::shared_ptr<ast::Expr> expr) -> std::any {
                         return expr->accept(*this);
@@ -18,6 +21,18 @@ namespace interpreter {
 
                 fn execute(std::shared_ptr<stmt::Stmt> statement) {
                         statement->accept(*this);
+                }
+
+                fn execute_block(
+                        std::vector<std::shared_ptr<stmt::Stmt>> statements,
+                        std::shared_ptr<environment::Environment> envi
+                ) {
+                        auto previous = env;
+                                env = envi;
+                                for (auto& statement : statements) {
+                                        execute(statement);
+                                }
+                        env = previous;
                 }
 
                 fn is_truthy(std::any& obj) -> bool {
@@ -177,12 +192,12 @@ namespace interpreter {
                 }
 
                 fn visitVariableExpr(ast::Variable& expr) -> std::any {
-                        return env.get(expr.name);
+                        return env->get(expr.name);
                 }
 
                 fn visitAssignExpr(ast::Assign& expr) -> std::any {
                         auto value = evaluate(expr.value);
-                        env.assign(expr.name, value);
+                        env->assign(expr.name, value);
                         return value;
                 }
 
@@ -206,8 +221,18 @@ namespace interpreter {
                                 value = evaluate(stmt.initializer);
                         }
 
-                        env.define(stmt.name.lexeme, value);
+                        env->define(stmt.name.lexeme, value);
                         return std::any();
+                }
+
+                fn visitBlockStmt(stmt::Block& stmt) -> std::any {
+                        execute_block(
+                                stmt.statements,
+                                std::shared_ptr<environment::Environment>(
+                                        new environment::Environment(env)
+                                )
+                        );
+                        return {};
                 }
         };
 }
